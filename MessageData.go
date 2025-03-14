@@ -1,53 +1,56 @@
 package zancango
 
-import "fmt"
+type messageData []byte
 
-const (
-	data_identifier_mask uint32 = 0x0FFF_FFFF
-)
-
-type messageData uint32
-
-type MessageDataFrame struct {
-	dataIdentifierLenBytes uint8
-	dataIdentifier         uint32
-	dataLenBytes           uint8
-	data                   messageData
+func MessageDataFromByteSlice(data []byte) messageData {
+	return messageData(data)
 }
 
-func NewMessageDataFrame(dataIdentifier uint32, data messageData) (*MessageDataFrame, error) {
-	// First need to check that the dataIdentifier is valid
-
-	if dataIdentifier&data_identifier_mask != 0 {
-		return nil, fmt.Errorf("invalid dataIdentifier: %x, due to it exceeding mask %x", dataIdentifier, data_identifier_mask)
-	}
-
-	messageDataFrame := &MessageDataFrame{dataIdentifier: dataIdentifier, data: data}
-
-	// Need to computer dataIdentifierLen
-
-	for dataIdentCopy := dataIdentifier; dataIdentCopy != 0; dataIdentCopy >>= 8 {
-		messageDataFrame.dataIdentifierLenBytes++
-	}
-
-	// Need to compute dataLen
-
-	for dataCopy := uint32(data); dataCopy != 0; dataCopy >>= 8 {
-		messageDataFrame.dataLenBytes++
-	}
-
-	return messageDataFrame, nil
+func (this messageData) ToByteSlice() []byte {
+	return []byte(this)
 }
 
-func (this *MessageDataFrame) DataIdentifier() uint32 {
-	return this.dataIdentifier
+func MessageDataFromByte(data byte) messageData {
+	return messageData([]byte{data})
 }
 
-func (this *MessageDataFrame) Data() messageData {
-	return this.data
+func (this messageData) ToByte() byte {
+	return this[0]
 }
 
-func (this *MessageDataFrame) ToBytes() []byte {
-	bytes := make([]byte, this.dataIdentifierLenBytes+this.dataLenBytes)
+func MessageDataFromInt16(data int16) messageData {
+	return messageData([]byte{byte(data >> 8), byte(data)})
+}
 
+func (this messageData) ToInt16() int16 {
+	return int16(this[0])<<8 | int16(this[1])
+}
+
+func MessageDataFromInt32(data int32) messageData {
+	return messageData([]byte{byte(data >> 24), byte(data >> 16), byte(data >> 8), byte(data)})
+}
+
+func (this messageData) ToInt32() int32 {
+	return int32(this[0])<<24 | int32(this[1])<<16 | int32(this[2])<<8 | int32(this[3])
+}
+
+func MessageDataFromUInt16(data uint16) messageData {
+	return messageData([]byte{byte(data >> 8), byte(data)})
+}
+
+func (this messageData) ToUInt16() uint16 {
+	return uint16(this[0])<<8 | uint16(this[1])
+}
+
+func MessageDataFromUInt32(data uint32) messageData {
+	return messageData([]byte{byte(data >> 24), byte(data >> 16), byte(data >> 8), byte(data)})
+}
+
+func (this messageData) ToUInt32() uint32 {
+	return uint32(this[0])<<24 | uint32(this[1])<<16 | uint32(this[2])<<8 | uint32(this[3])
+}
+
+// Length of the messageData in bytes
+func (this messageData) LenBytes() int {
+	return len(this)
 }
