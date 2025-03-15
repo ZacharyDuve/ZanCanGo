@@ -29,6 +29,14 @@ func TestMessageDataFromInt16(t *testing.T) {
 	}
 }
 
+func TestMessageDataFromInt16OnlyUsesOneByteIfLeadingByteIsZero(t *testing.T) {
+	data := int16(0x00FF)
+	md := MessageDataFromInt16(data)
+	if md.LenBytes() != 1 {
+		t.Errorf("Expected 1, got %v", md.LenBytes())
+	}
+}
+
 func TestMessageDataFromInt32(t *testing.T) {
 	data := int32(0x01020304)
 	md := MessageDataFromInt32(data)

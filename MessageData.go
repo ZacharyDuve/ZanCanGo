@@ -1,9 +1,25 @@
 package zancango
 
+import "fmt"
+
 type messageData []byte
 
-func MessageDataFromByteSlice(data []byte) messageData {
-	return messageData(data)
+const (
+	max_message_data_len = 4
+)
+
+func newMessageDataBase() messageData {
+	// Message data always starts with capacity of max_message_data_len
+	// Can cause memory waste but actually is still less than default and prevents second provisioning
+	return messageData(make(messageData, 0, max_message_data_len))
+}
+
+func MessageDataFromByteSlice(data []byte) (messageData, error) {
+	if len(data) > max_message_data_len {
+		return nil, fmt.Errorf("unable to create message data from bye slice to to length %v exceeding max length of %v", len(data), max_message_data_len)
+	}
+
+	return messageData(data), nil
 }
 
 func (this messageData) ToByteSlice() []byte {

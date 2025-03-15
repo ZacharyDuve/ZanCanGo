@@ -3,7 +3,8 @@ package zancango
 import "fmt"
 
 const (
-	data_identifier_mask uint32 = 0x0FFF_FFFF
+	data_identifier_mask         uint32 = 0x0FFF_FFFF
+	data_identifier_inverse_mask uint32 = 0xFFFF_FFFF ^ data_identifier_mask
 )
 
 type MessageDataFrame struct {
@@ -16,7 +17,7 @@ type MessageDataFrame struct {
 func NewMessageDataFrame(dataIdentifier uint32, data messageData) (*MessageDataFrame, error) {
 	// First need to check that the dataIdentifier is valid
 
-	if dataIdentifier&data_identifier_mask != 0 {
+	if dataIdentifier&data_identifier_inverse_mask != 0 {
 		return nil, fmt.Errorf("invalid dataIdentifier: %x, due to it exceeding mask %x", dataIdentifier, data_identifier_mask)
 	}
 
@@ -45,9 +46,17 @@ func (this *MessageDataFrame) Data() messageData {
 
 func (this *MessageDataFrame) ToBytes() []byte {
 	bytes := make([]byte, this.dataIdentifierLenBytes+this.dataLenBytes)
+	// Need to make a copy so that we don't modify the original dataIdentifier
+	dataIdentifierCopy := this.dataIdentifier
 	for i := this.dataIdentifierLenBytes - 1; i >= 0; i-- {
-		bytes[i] = byte(this.dataIdentifier)
-		this.dataIdentifier >>= 8
+		bytes[i] = byte(dataIdentifierCopy)
+		dataIdentifierCopy >>= 8
+
+		if i == 0 {
+			// Need to set the first byte to the dataIdentifierLenBytes
+			dataLenBits := byte(this.dataLenBytes-1) << 6
+			bytes[0] = bytes[0] | dataLenBits
+		}
 	}
 
 	for i := 0; i < this.dataLenBytes; i++ {
